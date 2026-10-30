@@ -1,0 +1,2 @@
+import { Card, PageTitle } from '../../components/ui'
+export function SupportPage() { return <><PageTitle eyebrow="Ayuda" title="Soporte" description="Información disponible para resolver incidencias." /><Card><h2>¿Necesitas ayuda?</h2><p>El backend no ofrece endpoints de soporte, recuperación de contraseña ni verificación OTP. Contacta al administrador de la institución por los canales establecidos.</p></Card></> }

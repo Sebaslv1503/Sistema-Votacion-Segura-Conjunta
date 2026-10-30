@@ -1,0 +1,78 @@
+services:
+
+  # ============================================================
+  # PostgreSQL — Base de datos del sistema de votación
+  # ============================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: votacion_postgres
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      # Inicializar usuarios de migración y aplicación con el script de init
+      POSTGRES_INITDB_ARGS: "--auth-host=md5"
+
+    ports:
+      # DESARROLLO: Solo accesible desde localhost para mayor seguridad.
+      # En producción, eliminar la exposición de puerto y usar red interna Docker.
+      - "127.0.0.1:${DB_PORT:-5433}:5432"
+
+    volumes:
+      # Datos persistentes
+      - postgres_data:/var/lib/postgresql/data
+      # Script de inicialización: crea los usuarios de BD antes de Flyway
+      - ./docker/init-db.sh:/docker-entrypoint-initdb.d/01-init-db.sh:ro
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+    networks:
+      - votacion_network
+
+  # ============================================================
+  # Aplicación Spring Boot
+  # Descomenta este servicio cuando tengas la imagen construida.
+  # Para desarrollo, ejecuta con: ./mvnw spring-boot:run
+  # ============================================================
+  # app:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: votacion_app
+  #   restart: unless-stopped
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   environment:
+  #     SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+  #     DB_HOST: postgres
+  #     DB_PORT: 5432
+  #     DB_NAME: ${DB_NAME}
+  #     DB_MIGRA_USER: ${DB_MIGRA_USER}
+  #     DB_MIGRA_PASSWORD: ${DB_MIGRA_PASSWORD}
+  #     DB_APP_USER: ${DB_APP_USER}
+  #     DB_APP_PASSWORD: ${DB_APP_PASSWORD}
+  #     JWT_SECRET: ${JWT_SECRET}
+  #     JWT_ACCESS_EXPIRATION_MS: ${JWT_ACCESS_EXPIRATION_MS}
+  #     JWT_REFRESH_EXPIRATION_MS: ${JWT_REFRESH_EXPIRATION_MS}
+  #     CORS_ALLOWED_ORIGIN: ${CORS_ALLOWED_ORIGIN}
+  #   ports:
+  #     - "127.0.0.1:8080:8080"
+  #   networks:
+  #     - votacion_network
+
+volumes:
+  postgres_data:
+    name: votacion_postgres_data
+
+networks:
+  votacion_network:
+    name: votacion_network
+    driver: bridge

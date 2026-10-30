@@ -1,0 +1,60 @@
+HELP.md
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### VS Code ###
+.vscode/
+
+### Seguridad — NUNCA commitear estos archivos ###
+# Variables de entorno con secretos reales
+.env
+.env.local
+.env.production
+*.env
+
+# Logs de la aplicación (pueden contener datos sensibles)
+logs/
+*.log
+*.log.*
+
+# Claves y certificados
+*.key
+*.pem
+*.p12
+*.jks
+*.keystore
+*.truststore
+
+# Archivos de configuración locales de IntelliJ con datos reales
+*.xml.local
+
+# Directorio de datos de Docker
+postgres_data/
+docker/data/
