@@ -53,8 +53,9 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
 
     -- El usuario de aplicación solo tiene USAGE en el esquema
     GRANT USAGE ON SCHEMA public TO ${DB_APP_USER:-votacion_app};
-
-    RAISE NOTICE 'Usuarios de base de datos creados correctamente.';
 EOSQL
+
+psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" \
+    -c "DO \$\$ BEGIN RAISE NOTICE 'Usuarios de base de datos creados correctamente.'; END \$\$;"
 
 echo "==> Inicialización de BD completada."

@@ -37,6 +37,19 @@ services:
       - votacion_network
 
   # ============================================================
+  # Mailpit — SMTP y bandeja de correo para desarrollo
+  # ============================================================
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: votacion_mailpit
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
+    networks:
+      - votacion_network
+
+  # ============================================================
   # Aplicación Spring Boot
   # Descomenta este servicio cuando tengas la imagen construida.
   # Para desarrollo, ejecuta con: ./mvnw spring-boot:run

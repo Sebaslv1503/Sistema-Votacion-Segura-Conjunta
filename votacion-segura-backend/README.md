@@ -8,15 +8,16 @@ La configuración del repositorio está en `application.properties`, `applicatio
 
 La integración con Testcontainers está declarada en Maven, pero Docker Desktop no estaba accesible desde el entorno de desarrollo al verificar este cambio. La prueba de contexto usa H2; esto no sustituye la validación de migraciones ni el comportamiento concurrente real en PostgreSQL.
 
-Para desarrollo local, copia `.env.example` a `.env` y reemplaza los placeholders. El perfil `dev` importa ese archivo automáticamente (Spring Boot no carga `.env` por defecto). `JWT_SECRET` debe decodificar a al menos 32 bytes; genera uno con `openssl rand -base64 64`. Después levanta PostgreSQL:
+Para desarrollo local, copia `.env.example` a `.env` y reemplaza los placeholders. El perfil `dev` importa ese archivo automáticamente (Spring Boot no carga `.env` por defecto). `JWT_SECRET` debe decodificar a al menos 32 bytes; genera uno con `openssl rand -base64 64`. Después levanta las dependencias de desarrollo (PostgreSQL y Mailpit):
 
 ```powershell
-docker compose up -d postgres
+docker compose up -d
 ./mvnw.cmd clean test
 ./mvnw.cmd spring-boot:run
 ```
 
 Swagger UI: `http://localhost:8080/swagger-ui.html`; OpenAPI: `http://localhost:8080/api-docs`.
+La bandeja de correo de desarrollo está disponible en `http://localhost:8025`.
 
 ## Endpoints disponibles
 
