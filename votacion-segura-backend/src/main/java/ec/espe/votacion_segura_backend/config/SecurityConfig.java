@@ -12,6 +12,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import ec.espe.votacion_segura_backend.auth.CompatiblePasswordEncoder;
 import ec.espe.votacion_segura_backend.auth.JwtAuthenticationFilter;
+import ec.espe.votacion_segura_backend.auth.LoginRateLimitFilter;
 import ec.espe.votacion_segura_backend.auth.UsuarioDetailsService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -71,6 +72,7 @@ public class SecurityConfig {
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter,
+                                                   LoginRateLimitFilter loginRateLimitFilter,
                                                    AuthenticationProvider provider) throws Exception {
         http
             // ── Sin sesión HTTP (stateless JWT) ───────────────────────
@@ -85,6 +87,7 @@ public class SecurityConfig {
             // ── CORS restrictivo ───────────────────────────────────────
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authenticationProvider(provider)
+            .addFilterBefore(loginRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
 
             // ── Headers de seguridad ───────────────────────────────────

@@ -22,6 +22,7 @@ La bandeja de correo de desarrollo está disponible en `http://localhost:8025`.
 ## Endpoints disponibles
 
 - `POST /api/v1/auth/login`, `/refresh`, `/logout`: acceso JWT y rotación/revocación del refresh token.
+- `POST /api/v1/auth/change-password`: cambio de contraseña autenticado; revoca las sesiones activas.
 - `/api/v1/socios`: alta, edición de datos permitidos, búsqueda paginada, habilitación y carga CSV (`numeroSocio,nombres,apellidos,correoElectronico`).
 - `/api/v1/participaciones/elecciones/{id}/mi-estado`: elegibilidad y estado propio del socio autenticado.
 - `/api/v1/elecciones`: elecciones disponibles, creación, cambios de estado y solicitud/aprobación de cierre por custodios distintos.
@@ -34,7 +35,7 @@ Las respuestas REST usan DTOs. Las credenciales de voto son tokens aleatorios de
 
 ## Cuentas semilla de desarrollo
 
-Flyway inserta `admin.tecnico`, `custodio.1`, `custodio.2`, `auditor.independiente` y `gestor.padron`. La migración semilla documenta una contraseña temporal de desarrollo; cámbiala antes de cualquier uso real. No se crean socios con cuentas de votante automáticamente.
+Flyway inserta las cuentas operativas y, en el perfil `dev`, las cuentas `demo.*`. Todas las cuentas demo usan `CambiarEsto1234!`; cámbialas inmediatamente mediante `/api/v1/auth/change-password`. Los votantes `demo.votante01` a `demo.votante04` están habilitados; `demo.votante05` está deliberadamente inhabilitado para probar el rechazo de elegibilidad.
 
 ## Estado de las pruebas
 

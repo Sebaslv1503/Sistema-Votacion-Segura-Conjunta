@@ -24,9 +24,11 @@ public class VotacionController {
 
     @PostMapping("/elecciones/{eleccionId}/credencial")
     @PreAuthorize("hasRole('SOCIO_VOTANTE')")
-    public CredencialResponse emitir(@PathVariable UUID eleccionId, Authentication authentication) {
+    public CredencialResponse emitir(@PathVariable UUID eleccionId,
+            @RequestParam(defaultValue = "false") boolean reemplazarPendiente,
+            Authentication authentication) {
         Socio socio = socios.findByUsuarioUsername(authentication.getName()).orElseThrow(() -> new IllegalArgumentException("Cuenta no asociada a socio"));
-        return new CredencialResponse(votacion.emitirCredencial(socio.getId(), eleccionId));
+        return new CredencialResponse(votacion.emitirCredencial(socio.getId(), eleccionId, reemplazarPendiente));
     }
 
     @PostMapping("/votos")

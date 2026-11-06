@@ -46,6 +46,11 @@ public class VotacionService {
 
     @Transactional
     public String emitirCredencial(UUID socioId, UUID eleccionId) {
+        return emitirCredencial(socioId, eleccionId, false);
+    }
+
+    @Transactional
+    public String emitirCredencial(UUID socioId, UUID eleccionId, boolean reemplazarPendiente) {
         Socio socio = socios.lockById(socioId).orElseThrow(() -> new IllegalArgumentException("Socio no encontrado"));
         Eleccion eleccion = elecciones.lockById(eleccionId).orElseThrow(() -> new IllegalArgumentException("Elección no encontrada"));
         validarElegibilidad(socio, eleccion);
@@ -56,8 +61,11 @@ public class VotacionService {
         Participacion bloqueada = participaciones.lockForElectionAndMember(eleccionId, socioId).orElseThrow();
         if (bloqueada.getEstadoParticipacion() == EstadoParticipacion.VOTADO) throw new IllegalStateException("El socio ya participó");
         for (CredencialVoto previa : credenciales.lockByParticipationAndState(bloqueada.getId(), EstadoCredencial.PENDIENTE)) {
-            if (previa.getFechaExpiracion().isAfter(Instant.now())) throw new IllegalStateException("Ya existe una credencial pendiente");
+            if (previa.getFechaExpiracion().isAfter(Instant.now()) && !reemplazarPendiente) {
+                throw new IllegalStateException("Ya existe una credencial pendiente");
+            }
             previa.setEstado(EstadoCredencial.VENCIDA);
+            credenciales.saveAndFlush(previa);
         }
 
         byte[] secret = new byte[32]; random.nextBytes(secret);
@@ -90,9 +98,7 @@ public class VotacionService {
 
         // No guardar vínculo de voto con socio, participación o credencial.
         Instant minuto = ahora.truncatedTo(ChronoUnit.MINUTES);
-        UUID voteId = UUID.randomUUID();
-        String integridad = sha256(eleccion.getId() + ":" + candidatura.getId() + ":" + voteId + ":" + minuto);
-        votos.save(Voto.builder().id(voteId).eleccion(eleccion).candidatura(candidatura).fechaRegistro(minuto).hashIntegridad(integridad).build());
+        votos.save(Voto.builder().eleccion(eleccion).candidatura(candidatura).fechaRegistro(minuto).build());
         credencial.setEstado(EstadoCredencial.USADA);
         credencial.setUsedAt(ahora);
         participacion.setEstadoParticipacion(EstadoParticipacion.VOTADO);

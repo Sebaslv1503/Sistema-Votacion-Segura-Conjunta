@@ -9,11 +9,13 @@ import ec.espe.votacion_segura_backend.repository.EventoAuditoriaRepository;
 import ec.espe.votacion_segura_backend.repository.RefreshTokenRepository;
 import ec.espe.votacion_segura_backend.repository.UsuarioRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.LockedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,18 +34,28 @@ public class AuthService {
     private final RefreshTokenRepository refreshTokens;
     private final EventoAuditoriaRepository auditoria;
     private final JwtService jwt;
+    private final PasswordEncoder passwords;
     private final long refreshMs;
     private final int maxIntentos;
     private final int bloqueoMinutos;
     private final SecureRandom random = new SecureRandom();
 
+    @Autowired
     public AuthService(AuthenticationManager authenticationManager, UsuarioRepository usuarios,
             RefreshTokenRepository refreshTokens, EventoAuditoriaRepository auditoria, JwtService jwt, JwtProperties jwtProperties,
+            PasswordEncoder passwords,
             @Value("${app.security.max-intentos-login:5}") int maxIntentos,
             @Value("${app.security.bloqueo-minutos:15}") int bloqueoMinutos) {
         this.authenticationManager = authenticationManager; this.usuarios = usuarios;
-        this.refreshTokens = refreshTokens; this.auditoria = auditoria; this.jwt = jwt;
+        this.refreshTokens = refreshTokens; this.auditoria = auditoria; this.jwt = jwt; this.passwords = passwords;
         this.refreshMs = jwtProperties.refreshExpirationMs(); this.maxIntentos = maxIntentos; this.bloqueoMinutos = bloqueoMinutos;
+    }
+
+    public AuthService(AuthenticationManager authenticationManager, UsuarioRepository usuarios,
+            RefreshTokenRepository refreshTokens, EventoAuditoriaRepository auditoria, JwtService jwt,
+            JwtProperties jwtProperties, int maxIntentos, int bloqueoMinutos) {
+        this(authenticationManager, usuarios, refreshTokens, auditoria, jwt, jwtProperties,
+                new CompatiblePasswordEncoder(), maxIntentos, bloqueoMinutos);
     }
 
     @Transactional
@@ -97,6 +109,26 @@ public class AuthService {
         if (presented == null || presented.isBlank()) return;
         refreshTokens.lockByHash(sha256(presented)).filter(token -> token.getUsuario().getUsername().equals(username))
                 .ifPresent(token -> { token.setRevocado(true); registrar(TipoEventoAuditoria.LOGOUT, token.getUsuario(), token.getUsuario().getId(), "Sesión cerrada"); });
+    }
+
+    @Transactional
+    public void changePassword(String username, String currentPassword, String newPassword) {
+        Usuario user = usuarios.lockByUsername(username)
+                .orElseThrow(() -> new BadCredentialsException("Credenciales inválidas"));
+        if (!passwords.matches(currentPassword, user.getPasswordHash())) {
+            registrar(TipoEventoAuditoria.LOGIN_FALLIDO, user, user.getId(), "Cambio de contraseña rechazado");
+            throw new BadCredentialsException("La contraseña actual no es válida");
+        }
+        if (newPassword == null || newPassword.length() < 12 || newPassword.equals(currentPassword)) {
+            throw new IllegalArgumentException("La nueva contraseña debe tener al menos 12 caracteres y ser diferente");
+        }
+        user.setPasswordHash(passwords.encode(newPassword));
+        user.setFailedLoginAttempts(0);
+        user.setAccountNonLocked(true);
+        user.setLockedUntil(null);
+        usuarios.save(user);
+        for (RefreshToken token : refreshTokens.findByUsuarioIdAndRevocadoFalse(user.getId())) token.setRevocado(true);
+        registrar(TipoEventoAuditoria.TOKEN_REVOCADO, user, user.getId(), "Sesiones revocadas por cambio de contraseña");
     }
 
     private TokenResponse issue(Usuario user) {

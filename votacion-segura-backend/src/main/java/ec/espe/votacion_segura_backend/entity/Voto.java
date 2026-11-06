@@ -4,7 +4,10 @@ import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.HexFormat;
 import java.util.UUID;
 
 /**
@@ -80,6 +83,25 @@ public class Voto {
      */
     @Column(name = "hash_integridad", nullable = false, updatable = false, length = 64)
     private String hashIntegridad;
+
+    @PrePersist
+    private void initializeIntegrity() {
+        if (id == null) {
+            id = UUID.randomUUID();
+        }
+        if (hashIntegridad == null) {
+            hashIntegridad = sha256(eleccion.getId() + ":" + candidatura.getId() + ":" + id + ":" + fechaRegistro);
+        }
+    }
+
+    private static String sha256(String value) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")
+                    .digest(value.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception e) {
+            throw new IllegalStateException("SHA-256 no disponible", e);
+        }
+    }
 
     // Nota: No se define @Setter deliberadamente para reforzar la inmutabilidad
     // del voto una vez insertado. Toda la entidad es de solo escritura inicial.
